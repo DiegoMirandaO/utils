@@ -7,8 +7,8 @@ col=$(curl -G --data-urlencode "q=$col_query" --data-urlencode "api_key=$3" --da
 
 count=$(echo "$col" | wc -l)
 if [ $count == 1 ]; then
-echo "WARN: Table $1 fail "
-exit 1
+    echo -e "\nWARN: Table $1 fail "
+    exit 1
 fi
 
 
@@ -30,12 +30,25 @@ copy_query="COPY+$1+($columns)+TO+stdout+WITH(FORMAT+csv,HEADER+true)"
 copy_file="$1.csv"
 copy_url="https://$2.carto.com/api/v2/sql/copyto"
 
-curl \
+if curl \
     --output $copy_file \
 	--compressed \
     --data "q=$copy_query" \
     --data-urlencode "api_key=$3" \
-    $copy_url
-
-mkdir -p tables
-mv -f $copy_file tables/
+    $copy_url; then
+    echo "DOWNLOAD: $copy_file" >> status.txt
+    gzip $copy_file
+    zip_file="$copy_file.gz"
+    mkdir -p tables
+    mv $zip_file tables/
+    date=$(date +"%Y_%m_%d")
+    
+    if aws s3 cp tables/$zip_file s3://opi-trupper/backups/carto/$1/$date.csv; then 
+        echo "UPLOAD: $zip_file" >> status.txt
+        rm tables/$zip_file
+    else
+        exit 1
+    fi
+else 
+    exit 1
+fi
