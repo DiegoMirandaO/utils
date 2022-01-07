@@ -43,7 +43,7 @@ if curl \
     mv $zip_file tables/
     date=$(date +"%Y_%m_%d")
     
-    if aws s3 cp tables/$zip_file s3://opi-trupper/backups/carto/$1/$date.csv; then 
+    if aws s3 cp tables/$zip_file s3://opi-trupper/backups/carto/$1/$date.csv.gz; then 
         echo "UPLOAD: $zip_file" >> status.txt
         rm tables/$zip_file
     else
